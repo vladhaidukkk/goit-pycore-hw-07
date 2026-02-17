@@ -35,15 +35,15 @@ def add_contact(args: CommandArgs, context: CommandContext) -> None:
         print("Contact already exists.")
 
 
-@commands.register("change", args=["name", "new phone number"])
+@commands.register("change", args=["name", "old phone number", "new phone number"])
 def change_contact(args: CommandArgs, context: CommandContext) -> None:
-    name, new_phone = args
+    name, old_phone, new_phone = args
     book = context["book"]
 
     record = book.find(name)
     if record:
         try:
-            record.replace_phone(0, new_phone)
+            record.edit_phone(old_phone, new_phone)
         except ValueError as e:
             print(e)
         else:
