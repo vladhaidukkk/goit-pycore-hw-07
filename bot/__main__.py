@@ -24,22 +24,14 @@ def add_contact(args: CommandArgs, context: CommandContext) -> None:
 
     record = book.find(name)
     if not record:
-        try:
-            record = Record(name)
-            if phone:
-                record.add_phone(phone)
-            book.add_record(record)
-        except ValueError as e:
-            print(e)
-        else:
-            print("Contact added.")
-    elif not record.phones and phone:
-        try:
+        record = Record(name)
+        if phone:
             record.add_phone(phone)
-        except ValueError as e:
-            print(e)
-        else:
-            print("Phone number added.")
+        book.add_record(record)
+        print("Contact added.")
+    elif not record.phones and phone:
+        record.add_phone(phone)
+        print("Phone number added.")
     else:
         print("Contact already exists.")
 
@@ -51,12 +43,8 @@ def change_contact(args: CommandArgs, context: CommandContext) -> None:
 
     record = book.find(name)
     if record:
-        try:
-            record.edit_phone(old_phone, new_phone)
-        except ValueError as e:
-            print(e)
-        else:
-            print("Contact updated.")
+        record.edit_phone(old_phone, new_phone)
+        print("Contact updated.")
     else:
         print("Contact doesn't exist.")
 
@@ -99,12 +87,8 @@ def add_birthday(args: CommandArgs, context: CommandContext) -> None:
 
     record = book.find(name)
     if record:
-        try:
-            record.add_birthday(birthday)
-        except ValueError as e:
-            print(e)
-        else:
-            print("Birthday added.")
+        record.add_birthday(birthday)
+        print("Birthday added.")
     else:
         print("Contact doesn't exist.")
 
@@ -185,6 +169,8 @@ def main() -> None:
                 print(f"You can optionally provide {e.optional_args_str}.")
             else:
                 print("This command doesn't take any arguments.")
+        except ValueError as e:
+            print(e)
         except Exception as e:
             print(f"Whoops, an unexpected error occurred: {e}")
 
