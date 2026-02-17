@@ -17,20 +17,29 @@ def say_hello() -> None:
     print("How can I help you?")
 
 
-@commands.register("add", args=["name", "phone number"])
+@commands.register("add", args=["name"], optional_args=["phone number"])
 def add_contact(args: CommandArgs, context: CommandContext) -> None:
     name, phone = args
     book = context["book"]
 
-    if name not in book:
+    record = book.find(name)
+    if not record:
         try:
             record = Record(name)
-            record.add_phone(phone)
+            if phone:
+                record.add_phone(phone)
             book.add_record(record)
         except ValueError as e:
             print(e)
         else:
             print("Contact added.")
+    elif not record.phones and phone:
+        try:
+            record.add_phone(phone)
+        except ValueError as e:
+            print(e)
+        else:
+            print("Phone number added.")
     else:
         print("Contact already exists.")
 
@@ -58,10 +67,15 @@ def show_phone(args: CommandArgs, context: CommandContext) -> None:
     book = context["book"]
 
     record = book.find(name)
-    if record:
-        print(record.phones[0])
-    else:
+    if not record:
         print("Contact doesn't exist.")
+        return
+
+    if not record.phones:
+        print("This contact doesn't have a phone number.")
+        return
+
+    print(record.phones[0])
 
 
 @commands.register("all")
@@ -69,7 +83,10 @@ def show_all(context: CommandContext) -> None:
     book = context["book"]
     if book:
         print(
-            "\n".join(f"{record.name}: {record.phones[0]}" for record in book.values())
+            "\n".join(
+                f"{record.name}: {record.phones[0] if record.phones else '-'}"
+                for record in book.values()
+            )
         )
     else:
         print("No contacts.")
@@ -158,12 +175,16 @@ def main() -> None:
         except CommandNotFoundError:
             print("Invalid command.")
         except InvalidCommandArgumentsError as e:
-            expected_args_str = (
-                ", ".join(e.expected_args[:-1]) + " and " + e.expected_args[-1]
-                if len(e.expected_args) > 1
-                else e.expected_args[0]
-            )
-            print(f"Give me {expected_args_str} please.")
+            if e.required_args and e.optional_args:
+                print(
+                    f"Give me {e.required_args_str} please, and optionally {e.optional_args_str}."
+                )
+            elif e.required_args:
+                print(f"Give me {e.required_args_str} please.")
+            elif e.optional_args:
+                print(f"You can optionally provide {e.optional_args_str}.")
+            else:
+                print("This command doesn't take any arguments.")
         except Exception as e:
             print(f"Whoops, an unexpected error occurred: {e}")
 
