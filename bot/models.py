@@ -88,6 +88,9 @@ class Record:
     def add_birthday(self, birthday: str) -> None:
         self.birthday = Birthday(birthday)
 
+    def get_birthday(self, format: str = "%Y.%m.%d") -> str | None:
+        return self.birthday.value.strftime(format) if self.birthday else None
+
     def __str__(self):
         return f"Contact name: {self.name.value}, phones: {'; '.join(p.value for p in self.phones)}"
 
@@ -102,6 +105,10 @@ class AddressBook(UserDict):
     def delete(self, name: str) -> None:
         del self.data[name]
 
+    @property
+    def birthdays_count(self) -> int:
+        return sum(1 for record in self.data.values() if record.birthday)
+
     def get_upcoming_birthdays(self) -> list[dict]:
         current_date = date.today()
         upcoming_birthdays: list[dict] = []
@@ -112,8 +119,8 @@ class AddressBook(UserDict):
 
             current_year_birthday = date(
                 year=current_date.year,
-                month=record.birthday.month,
-                day=record.birthday.day,
+                month=record.birthday.value.month,
+                day=record.birthday.value.day,
             )
 
             if current_year_birthday >= current_date:
@@ -121,8 +128,8 @@ class AddressBook(UserDict):
             else:
                 next_birthday = date(
                     year=current_date.year + 1,
-                    month=record.birthday.month,
-                    day=record.birthday.day,
+                    month=record.birthday.value.month,
+                    day=record.birthday.value.day,
                 )
 
             dates_diff = next_birthday - current_date
@@ -138,6 +145,7 @@ class AddressBook(UserDict):
             upcoming_birthdays.append(
                 {
                     "name": record.name,
+                    "birthday": record.get_birthday(),
                     "congratulation_date": congratulation_date.strftime("%Y.%m.%d"),
                 }
             )

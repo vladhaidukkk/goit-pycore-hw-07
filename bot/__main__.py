@@ -75,6 +75,61 @@ def show_all(context: CommandContext) -> None:
         print("No contacts.")
 
 
+@commands.register("add-birthday", args=["name", "birthday"])
+def add_birthday(args: CommandArgs, context: CommandContext) -> None:
+    name, birthday = args
+    book = context["book"]
+
+    record = book.find(name)
+    if record:
+        try:
+            record.add_birthday(birthday)
+        except ValueError as e:
+            print(e)
+        else:
+            print("Birthday added.")
+    else:
+        print("Contact doesn't exist.")
+
+
+@commands.register("show-birthday", args=["name"])
+def show_birthday(args: CommandArgs, context: CommandContext) -> None:
+    name = args[0]
+    book = context["book"]
+
+    record = book.find(name)
+    if record:
+        birthday = record.get_birthday()
+        print(birthday or "Contact doesn't have a birthday set.")
+    else:
+        print("Contact doesn't exist.")
+
+
+@commands.register("birthdays")
+def birthdays(context: CommandContext) -> None:
+    book = context["book"]
+
+    if not book:
+        print("No contacts.")
+        return
+
+    if book.birthdays_count == 0:
+        print("No contacts with birthdays.")
+        return
+
+    upcoming_birthdays = book.get_upcoming_birthdays()
+    if not upcoming_birthdays:
+        print("No contacts with upcoming birthdays.")
+        return
+
+    print(
+        "\n".join(
+            f"{upcoming_birthday['name']}: {upcoming_birthday['birthday']} (Congratulate: {upcoming_birthday['congratulation_date']})"
+            for upcoming_birthday in upcoming_birthdays
+        )
+    )
+
+
 @commands.register("exit", "close", "quit", "bye")
 def say_goodbye() -> None:
     print("Good bye!")
