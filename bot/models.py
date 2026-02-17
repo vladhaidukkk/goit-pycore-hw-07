@@ -1,4 +1,5 @@
 from collections import UserDict
+from datetime import date, datetime, timedelta
 from typing import Any
 
 
@@ -32,10 +33,20 @@ class Phone(Field):
         super().__init__(value)
 
 
+class Birthday(Field):
+    def __init__(self, value: str) -> None:
+        try:
+            value = datetime.strptime(value, "%d.%m.%Y")
+            super().__init__(value)
+        except ValueError:
+            raise ValueError("Invalid birthday format. Use DD.MM.YYYY")
+
+
 class Record:
     def __init__(self, name: str) -> None:
         self.name = Name(name)
         self.phones: list[Phone] = []
+        self.birthday = None
 
     def add_phone(self, phone: str) -> None:
         phone_idx = self._find_phone_index(phone)
@@ -68,6 +79,9 @@ class Record:
             if p.value == phone:
                 return i
 
+    def add_birthday(self, birthday: str) -> None:
+        self.birthday = Birthday(birthday)
+
     def __str__(self):
         return f"Contact name: {self.name.value}, phones: {'; '.join(p.value for p in self.phones)}"
 
@@ -81,3 +95,45 @@ class AddressBook(UserDict):
 
     def delete(self, name: str) -> None:
         del self.data[name]
+
+    def get_upcoming_birthdays(self) -> list[dict]:
+        current_date = date.today()
+        upcoming_birthdays: list[dict] = []
+
+        for record in self.data.values():
+            if record.birthday is None:
+                continue
+
+            current_year_birthday = date(
+                year=current_date.year,
+                month=record.birthday.month,
+                day=record.birthday.day,
+            )
+
+            if current_year_birthday >= current_date:
+                next_birthday = current_year_birthday
+            else:
+                next_birthday = date(
+                    year=current_date.year + 1,
+                    month=record.birthday.month,
+                    day=record.birthday.day,
+                )
+
+            dates_diff = next_birthday - current_date
+            if dates_diff.days > 7:
+                continue
+
+            congratulation_date = next_birthday
+            if congratulation_date.isoweekday() == 6:  # Saturday -> Monday
+                congratulation_date += timedelta(days=2)
+            elif congratulation_date.isoweekday() == 7:  # Sunday -> Monday
+                congratulation_date += timedelta(days=1)
+
+            upcoming_birthdays.append(
+                {
+                    "name": record.name,
+                    "congratulation_date": congratulation_date.strftime("%Y.%m.%d"),
+                }
+            )
+
+        return upcoming_birthdays
