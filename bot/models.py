@@ -69,6 +69,12 @@ class Record:
 
         self.phones[phone_idx] = Phone(new_phone)
 
+    def replace_phone(self, phone_index: int, new_phone: str) -> None:
+        if phone_index > len(self.phones) - 1:
+            raise ValueError(f"Phone number at position {phone_index} does not exist")
+
+        self.phones[phone_index] = Phone(new_phone)
+
     def find_phone(self, phone: str) -> Phone | None:
         for p in self.phones:
             if p.value == phone:

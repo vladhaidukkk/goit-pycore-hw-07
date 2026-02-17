@@ -7,6 +7,7 @@ from bot.commands import (
     CommandsRegistry,
     InvalidCommandArgumentsError,
 )
+from bot.models import AddressBook, Record
 
 commands = CommandsRegistry()
 
@@ -19,11 +20,17 @@ def say_hello() -> None:
 @commands.register("add", args=["name", "phone number"])
 def add_contact(args: CommandArgs, context: CommandContext) -> None:
     name, phone = args
-    contacts = context["contacts"]
+    book = context["book"]
 
-    if name not in contacts:
-        contacts[name] = phone
-        print("Contact added.")
+    if name not in book:
+        try:
+            record = Record(name)
+            record.add_phone(phone)
+            book.add_record(record)
+        except ValueError as e:
+            print(e)
+        else:
+            print("Contact added.")
     else:
         print("Contact already exists.")
 
@@ -31,11 +38,16 @@ def add_contact(args: CommandArgs, context: CommandContext) -> None:
 @commands.register("change", args=["name", "new phone number"])
 def change_contact(args: CommandArgs, context: CommandContext) -> None:
     name, new_phone = args
-    contacts = context["contacts"]
+    book = context["book"]
 
-    if name in contacts:
-        contacts[name] = new_phone
-        print("Contact updated.")
+    record = book.find(name)
+    if record:
+        try:
+            record.replace_phone(0, new_phone)
+        except ValueError as e:
+            print(e)
+        else:
+            print("Contact updated.")
     else:
         print("Contact doesn't exist.")
 
@@ -43,20 +55,22 @@ def change_contact(args: CommandArgs, context: CommandContext) -> None:
 @commands.register("phone", args=["name"])
 def show_phone(args: CommandArgs, context: CommandContext) -> None:
     name = args[0]
-    contacts = context["contacts"]
+    book = context["book"]
 
-    if name in contacts:
-        phone = contacts[name]
-        print(phone)
+    record = book.find(name)
+    if record:
+        print(record.phones[0])
     else:
         print("Contact doesn't exist.")
 
 
 @commands.register("all")
 def show_all(context: CommandContext) -> None:
-    contacts = context["contacts"]
-    if contacts:
-        print("\n".join(f"{name}: {phone}" for name, phone in contacts.items()))
+    book = context["book"]
+    if book:
+        print(
+            "\n".join(f"{record.name}: {record.phones[0]}" for record in book.values())
+        )
     else:
         print("No contacts.")
 
@@ -74,7 +88,7 @@ def parse_input(user_input: str) -> tuple[str, ...]:
 
 
 def main() -> None:
-    contacts: dict[str, str] = {}
+    book = AddressBook()
 
     print("Welcome to the assistant bot!")
     while True:
@@ -85,7 +99,7 @@ def main() -> None:
         command, *args = parse_input(user_input)
 
         try:
-            commands.run(command, *args, contacts=contacts)
+            commands.run(command, *args, book=book)
         except CommandNotFoundError:
             print("Invalid command.")
         except InvalidCommandArgumentsError as e:
